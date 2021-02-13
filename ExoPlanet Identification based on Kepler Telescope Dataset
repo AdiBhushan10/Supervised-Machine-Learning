@@ -1,123 +1,126 @@
-import os
 import warnings
-import math
 warnings.filterwarnings('ignore')
 import numpy as np
 import pandas as pd
+import math
 import matplotlib.pyplot as plt
-plt.style.use('fivethirtyeight')
-from pylab import rcParams
-rcParams['figure.figsize'] = 10, 6
-from sklearn.metrics import mean_squared_error, mean_absolute_error
-from imblearn.over_sampling import SMOTE
-from sklearn.model_selection import train_test_split, GridSearchCV 
-from sklearn import linear_model
-from sklearn.model_selection import cross_val_score
-from sklearn.metrics import precision_score, recall_score,roc_curve,auc, f1_score, roc_auc_score,confusion_matrix, accuracy_score, classification_report
-from sklearn.preprocessing import StandardScaler, normalize
+from sklearn.model_selection import train_test_split, GridSearchCV, validation_curve
 import seaborn as sns
+randomSeed = 11  #Dataset1 - 11 through 15
 
-randomSeed = 1
 MyFrame = pd.read_csv('C:/Users/User2/Desktop/GATECH/Machine Learning/Datasets/Dataset1 - Assignment 1/ExoPlanetData.csv')
-MyFrame['ExoPlanetCandidate'] = MyFrame['DispositionUsingKeplerData'].apply(lambda x: 1 if x == 'CANDIDATE' else 0)
+MyFrame['Detected_ExoPlanet'] = MyFrame['DispositionUsingKeplerData'].apply(lambda x: 1 if x == 'CANDIDATE' else 0)
 MyFrame.drop(columns=['Object_Name','DispositionUsingKeplerData'], inplace=True)
-MyFrame = MyFrame.fillna(MyFrame.median())
+MyFrame.fillna(MyFrame.median(), inplace=True)
 print(MyFrame.shape)
 
-# Independent and Dependent Features
-features = MyFrame.drop(columns=['ExoPlanetCandidate'])
-target = MyFrame['ExoPlanetCandidate']
+# Independent features and target feature
+features = MyFrame.drop(columns=['Detected_ExoPlanet'])
+target = MyFrame['Detected_ExoPlanet']
 print(target.value_counts())
-print(target.shape)
-print(features.shape)
-#sns.heatmap(MyFrame.isnull(), cbar=False,  yticklabels=False)
-#plt.show()
-#print(MyFrame.isna().any())
 
-X_train, X_test, y_train, y_test = train_test_split(features, target, random_state=randomSeed, test_size=0.25)
-X_train, X_val, y_train, y_val = train_test_split(X_train, y_train, test_size=0.3)
 
+#Test Train Split: 75-25; Train Validation Split: 60-40
+X_train, X_test, Y_train, Y_test = train_test_split(features, target, random_state=randomSeed, test_size=0.25)
+X_train, X_val, Y_train, Y_val = train_test_split(X_train, Y_train, random_state=randomSeed, test_size=0.4)
 print("Shape of validation set:", X_val.shape)
 print("Shape of test set:", X_test.shape)
 print("Shape of training set:", X_train.shape)
-"""
+
+#Before Hyperparameter Tuning (No pruning)
 from sklearn.tree import DecisionTreeClassifier
-dtree = DecisionTreeClassifier() #criterion='gini',max_depth=10,min_samples_leaf=5)
-dtree.fit(X_train,y_train)
-predicting = dtree.predict(X_test)
-from sklearn.metrics import accuracy_score
-score1=accuracy_score(y_test,predicting)
-print(score1)
-"""
-#With Pruning - Changing max_depth parameter as follows:
-# GridSearch Parameters
+MyTree = DecisionTreeClassifier(random_state=randomSeed)
+MyTree.fit(X_train,Y_train)
+predicting = MyTree.predict(X_val)
+from sklearn.metrics import f1_score
+score_val=f1_score(Y_val,predicting)
+print(f'Accuracy before hyperparameter tuning: {score_val}')
+
+#With Pruning - Changing max_depth parameter 
+#We will plot model complexity curve using 1 hyperparameter only (max_depth) and then use it in learning curve and check accuracy
+
+estimator = DecisionTreeClassifier(random_state=randomSeed) 
+train_score, test_score = validation_curve(
+        estimator, X_train, Y_train,param_name= 'max_depth', param_range = np.arange(1, 11) ,cv = 4, n_jobs=1, scoring='f1')
+
+# Store stats for testing score 
+mean_test_score = np.mean(test_score, axis = 1) 
+std_test_score = np.std(test_score, axis = 1) 
+# Store stats for training score 
+mean_train_score = np.mean(train_score, axis = 1) 
+std_train_score = np.std(train_score, axis = 1) 
+  
+# Plotting training and cross-validation scores 
+param_range = np.arange(1, 11)
+plt.plot(param_range, mean_train_score,  
+     label = "Training Score", color = 'brown') 
+plt.plot(param_range, mean_test_score, 
+   label = "Cross-Validation Score", color = 'green') 
+title = "Model Complexity/Validation Curve: ExoPlanet Identification"
+plt.title(title)
+plt.xlabel("Max_depth")
+plt.ylabel("Model Score")
+plt.tight_layout() 
+plt.legend(loc = 'best') 
+plt.show()
+
+# Hyperparameter Tuning begins
+# GridSearch for best parameters
 parameters = {
     'max_depth': list(range(1, 11))
-    #,'criterion':['entropy']#,'criterion':['gini','entropy']
-    #,'min_samples_leaf': list(range(1, 6))
+    ,'criterion':['gini','entropy'] # we can comment it out if it takes more time, it will NOT change our scores significantly
+    ,'min_samples_leaf': list(range(1, 11))
 }
-#This cell might take over an hour if you run it.
-from sklearn.tree import DecisionTreeClassifier
-grid = GridSearchCV(DecisionTreeClassifier(criterion='entropy',random_state=randomSeed), param_grid=parameters, cv=10, n_jobs=-1, 
+grid = GridSearchCV(DecisionTreeClassifier(random_state=randomSeed), param_grid=parameters, cv=4, n_jobs=-1, 
                       verbose=1, return_train_score=True, scoring='f1')
-grid.fit(X_train, y_train)
-#y_test_grid = grid.predict(X_test)
-plot_df = pd.DataFrame(grid.cv_results_)
-
-fig, ax = plt.subplots()
-plot_df.plot(x='param_max_depth', y='mean_train_score', label='Training Score', ax=ax, marker='.', ls=":")
-plot_df.plot(x='param_max_depth', y='mean_test_score', label='Validation Score', ax=ax, marker='.', ls=":")
-ax.set_xlabel("Max Depth")
-ax.set_ylabel("Accuracy")
-ax.set_ylim(bottom=0.8, top=1.0)
-plt.show()
+grid.fit(X_train, Y_train)
 # Function Prints best parameters for GridSearchCV
-print('Best Parameters: {}\n'.format(grid.best_params_))
-print('Best Estimators: {}\n'.format(grid.best_estimator_))
-print('Best Score: {}\n'.format(grid.best_score_))
+print('Top Parameters: {}\n'.format(grid.best_params_))
+print('Top Score: {}'.format(grid.best_score_))
+print(f'This classification model has a top accuracy of {math.ceil(100*grid.best_score_)} % using grid search which is an improvement over initial score of {math.floor(100*score_val)} % on the validation dataset')
 
-print(f'From this, we choose the following parameters for computing the learning curve:\n{grid.best_params_}')
-score = grid.score(X_test, y_test)
-print(f'This model has score of {grid.best_score_} in cross validation for grid search and {score} on the held-out test data')
-
-# Full tree nodes vs pruned tree nodes
+# Pruning Result
 import copy
 import sklearn.tree as tree
-dt_full = copy.deepcopy(grid.best_estimator_)
-dt_full.max_depth = 10 
-dt_full.fit(X_train, y_train)
-print(f'The full tree has {dt_full.tree_.node_count} nodes')
-dt_pruned = grid.best_estimator_
-print(f'The pruned tree has {dt_pruned.tree_.node_count} nodes')
+Complete_dt = copy.deepcopy(grid.best_estimator_)
+Complete_dt.max_depth = 10 
+Complete_dt.fit(X_train, Y_train)
+print(f'The entire tree has {Complete_dt.tree_.node_count} nodes')
+Pruned_dt = grid.best_estimator_
+print(f'The pruned tree has {Pruned_dt.tree_.node_count} nodes')
 
-#Learning Curve calculations using the BEST PARAMETERS
-val_acc_train_size=[]
-train_acc_train_size=[]
-for i in range(10,101,1):
-    # Fitting
-    percentage=i*0.01
-    dtree = DecisionTreeClassifier(criterion='entropy',max_depth=10)
-    # Sampling
-    df_sampled = MyFrame.sample(frac=percentage)
-    X_train_sampled=df_sampled.drop('ExoPlanetCandidate',axis=1)
-    y_train_sampled=df_sampled['ExoPlanetCandidate']
-    # Fitting and Predictions
-    dtree.fit(X_train_sampled,y_train_sampled)
-    pred_train = dtree.predict(X_train_sampled)
-    pred_val = dtree.predict(X_val)
-    # Accuracy score
-    acc_train=accuracy_score(y_train_sampled,pred_train)
-    acc_val=accuracy_score(y_val,pred_val)
-    # Appending to the lists
-    train_acc_train_size.append(acc_train)
-    val_acc_train_size.append(acc_val)
-    if i%10==0:
-        print(f"Done for: {i}% training set size")
+# Learning Curve computation using the top parameters
+val_set=[]
+train_set=[]
+for i in range(20,101,20):
+    # Classifier Initialized
+    percentage_of_total=i*0.01
+    new_dt = DecisionTreeClassifier(random_state=randomSeed,**(grid.best_params_))
+    # Sample Data
+    df_samples = MyFrame.sample(frac=percentage_of_total)
+    # Generate target
+    X_train_samples=df_samples.drop('Detected_ExoPlanet',axis=1)
+    Y_train_samples=df_samples['Detected_ExoPlanet']
+    # Fit and Predict
+    new_dt.fit(X_train_samples,Y_train_samples)
+    predict_train = new_dt.predict(X_train_samples)
+    predict_val = new_dt.predict(X_val)
+    # F1-Accuracy score
+    accr_train=f1_score(Y_train_samples,predict_train)
+    accr_val=f1_score(Y_val,predict_val)
+  
+    train_set.append(accr_train)
+    val_set.append(accr_val)
 
-plt.plot(range(10,101,1),train_acc_train_size,c='blue')
-plt.plot(range(10,101,1),val_acc_train_size,c='orange')
-plt.legend(["Training Set","Validation Set"])
+# Plotting Learning Curve
+plt.plot(range(20,101,20),train_set,c='brown')
+plt.plot(range(20,101,20),val_set,c='black')
+title = "Learning Curve: ExoPlanet Identification"
+plt.title(title)
+plt.legend(["Training Scores","Validation Scores"])
 plt.xlabel("Training Sample (in %)")
 plt.ylabel("Model Accuracy")
 plt.ylim(0.8,1.0)
+plt.xticks(np.arange(0,120,step=20))
 plt.show()
+
