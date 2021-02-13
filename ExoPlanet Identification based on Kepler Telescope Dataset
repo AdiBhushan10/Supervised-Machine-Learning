@@ -1,0 +1,123 @@
+import os
+import warnings
+import math
+warnings.filterwarnings('ignore')
+import numpy as np
+import pandas as pd
+import matplotlib.pyplot as plt
+plt.style.use('fivethirtyeight')
+from pylab import rcParams
+rcParams['figure.figsize'] = 10, 6
+from sklearn.metrics import mean_squared_error, mean_absolute_error
+from imblearn.over_sampling import SMOTE
+from sklearn.model_selection import train_test_split, GridSearchCV 
+from sklearn import linear_model
+from sklearn.model_selection import cross_val_score
+from sklearn.metrics import precision_score, recall_score,roc_curve,auc, f1_score, roc_auc_score,confusion_matrix, accuracy_score, classification_report
+from sklearn.preprocessing import StandardScaler, normalize
+import seaborn as sns
+
+randomSeed = 1
+MyFrame = pd.read_csv('C:/Users/User2/Desktop/GATECH/Machine Learning/Datasets/Dataset1 - Assignment 1/ExoPlanetData.csv')
+MyFrame['ExoPlanetCandidate'] = MyFrame['DispositionUsingKeplerData'].apply(lambda x: 1 if x == 'CANDIDATE' else 0)
+MyFrame.drop(columns=['Object_Name','DispositionUsingKeplerData'], inplace=True)
+MyFrame = MyFrame.fillna(MyFrame.median())
+print(MyFrame.shape)
+
+# Independent and Dependent Features
+features = MyFrame.drop(columns=['ExoPlanetCandidate'])
+target = MyFrame['ExoPlanetCandidate']
+print(target.value_counts())
+print(target.shape)
+print(features.shape)
+#sns.heatmap(MyFrame.isnull(), cbar=False,  yticklabels=False)
+#plt.show()
+#print(MyFrame.isna().any())
+
+X_train, X_test, y_train, y_test = train_test_split(features, target, random_state=randomSeed, test_size=0.25)
+X_train, X_val, y_train, y_val = train_test_split(X_train, y_train, test_size=0.3)
+
+print("Shape of validation set:", X_val.shape)
+print("Shape of test set:", X_test.shape)
+print("Shape of training set:", X_train.shape)
+"""
+from sklearn.tree import DecisionTreeClassifier
+dtree = DecisionTreeClassifier() #criterion='gini',max_depth=10,min_samples_leaf=5)
+dtree.fit(X_train,y_train)
+predicting = dtree.predict(X_test)
+from sklearn.metrics import accuracy_score
+score1=accuracy_score(y_test,predicting)
+print(score1)
+"""
+#With Pruning - Changing max_depth parameter as follows:
+# GridSearch Parameters
+parameters = {
+    'max_depth': list(range(1, 11))
+    #,'criterion':['entropy']#,'criterion':['gini','entropy']
+    #,'min_samples_leaf': list(range(1, 6))
+}
+#This cell might take over an hour if you run it.
+from sklearn.tree import DecisionTreeClassifier
+grid = GridSearchCV(DecisionTreeClassifier(criterion='entropy',random_state=randomSeed), param_grid=parameters, cv=10, n_jobs=-1, 
+                      verbose=1, return_train_score=True, scoring='f1')
+grid.fit(X_train, y_train)
+#y_test_grid = grid.predict(X_test)
+plot_df = pd.DataFrame(grid.cv_results_)
+
+fig, ax = plt.subplots()
+plot_df.plot(x='param_max_depth', y='mean_train_score', label='Training Score', ax=ax, marker='.', ls=":")
+plot_df.plot(x='param_max_depth', y='mean_test_score', label='Validation Score', ax=ax, marker='.', ls=":")
+ax.set_xlabel("Max Depth")
+ax.set_ylabel("Accuracy")
+ax.set_ylim(bottom=0.8, top=1.0)
+plt.show()
+# Function Prints best parameters for GridSearchCV
+print('Best Parameters: {}\n'.format(grid.best_params_))
+print('Best Estimators: {}\n'.format(grid.best_estimator_))
+print('Best Score: {}\n'.format(grid.best_score_))
+
+print(f'From this, we choose the following parameters for computing the learning curve:\n{grid.best_params_}')
+score = grid.score(X_test, y_test)
+print(f'This model has score of {grid.best_score_} in cross validation for grid search and {score} on the held-out test data')
+
+# Full tree nodes vs pruned tree nodes
+import copy
+import sklearn.tree as tree
+dt_full = copy.deepcopy(grid.best_estimator_)
+dt_full.max_depth = 10 
+dt_full.fit(X_train, y_train)
+print(f'The full tree has {dt_full.tree_.node_count} nodes')
+dt_pruned = grid.best_estimator_
+print(f'The pruned tree has {dt_pruned.tree_.node_count} nodes')
+
+#Learning Curve calculations using the BEST PARAMETERS
+val_acc_train_size=[]
+train_acc_train_size=[]
+for i in range(10,101,1):
+    # Fitting
+    percentage=i*0.01
+    dtree = DecisionTreeClassifier(criterion='entropy',max_depth=10)
+    # Sampling
+    df_sampled = MyFrame.sample(frac=percentage)
+    X_train_sampled=df_sampled.drop('ExoPlanetCandidate',axis=1)
+    y_train_sampled=df_sampled['ExoPlanetCandidate']
+    # Fitting and Predictions
+    dtree.fit(X_train_sampled,y_train_sampled)
+    pred_train = dtree.predict(X_train_sampled)
+    pred_val = dtree.predict(X_val)
+    # Accuracy score
+    acc_train=accuracy_score(y_train_sampled,pred_train)
+    acc_val=accuracy_score(y_val,pred_val)
+    # Appending to the lists
+    train_acc_train_size.append(acc_train)
+    val_acc_train_size.append(acc_val)
+    if i%10==0:
+        print(f"Done for: {i}% training set size")
+
+plt.plot(range(10,101,1),train_acc_train_size,c='blue')
+plt.plot(range(10,101,1),val_acc_train_size,c='orange')
+plt.legend(["Training Set","Validation Set"])
+plt.xlabel("Training Sample (in %)")
+plt.ylabel("Model Accuracy")
+plt.ylim(0.8,1.0)
+plt.show()
