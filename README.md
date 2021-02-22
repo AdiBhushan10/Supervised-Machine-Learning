@@ -17,13 +17,13 @@ https://www.github.com/
 
 I have separated my code based on 5 different ML Algorithms.
 
-These are the five Python 3.x files (I have used Microsoft Visual Studio Python IDE to build and execute my code):
+These are the five Python 3.x files for each dataset (I have used Microsoft Visual Studio Python IDE to build and execute my code):
 
-1. DecisionTreeWithCurves.py
-2. BoostingWithCurves.py
-3. KNNWithCurves.py
-4. SVMWithCurves.py
-5. NeuralNetworkWithCurve.py
+1. DecisionTreeWithCurves1, DecisionTreeWithCurves2
+2. BoostingWithCurves1, BoostingWithCurves2
+3. KNNWithCurves1, KNNWithCurves2
+4. SVMWithCurves1, SVMWithCurves2
+5. NeuralNetworkWithCurve1, NeuralNetworkWithCurve2
 
 
 Note: Please update the code to get the address of the saved .csv data files in your personal computer that I have attached in my repository 
