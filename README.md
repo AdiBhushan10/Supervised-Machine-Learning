@@ -1,13 +1,15 @@
 This assignment is comprised of Machine Learning Modeling & Analysis on 2 datasets:
 
 1. ExoPlanet Identification
-Original Dataset URL: https://exoplanetarchive.ipac.caltech.edu/cgi-bin/TblView/nph-tblView?app=ExoTbls&config=cumulative
+Original Dataset URL: 
+https://exoplanetarchive.ipac.caltech.edu/cgi-bin/TblView/nph-tblView?app=ExoTbls&config=cumulative
 Website: 
 https://www.nasa.gov/mission_pages/kepler/overview/index.html
 https://exoplanets.nasa.gov/
 
 2. Wine Quality Prediction
-Original Dataset URL: https://archive.ics.uci.edu/ml/datasets/wine+quality
+Original Dataset URL: 
+https://archive.ics.uci.edu/ml/datasets/wine+quality
 
 I have done some data pre-processing (Changing names, handling missing values etc.) on the original dataset above
 and saved the .csv files in my repository that I am sharing with you:
