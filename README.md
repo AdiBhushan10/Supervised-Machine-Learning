@@ -1,4 +1,10 @@
-This project is comprised of Machine Learning Modeling & Analysis on 2 datasets:
+#########################################################################################
+# Submission By: Aditya Bhushan
+########################################################################################
+
+This Project is based on Supervised Learning!
+
+This repository is comprised of Machine Learning Modeling & Analysis on 2 datasets:
 
 1. ExoPlanet Identification
 Original Dataset URL: 
