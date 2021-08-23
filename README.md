@@ -35,5 +35,5 @@ These are the five Python 3.x files for each dataset (I have used Microsoft Visu
 Note: Please update the code to get the address of the saved .csv data files in your personal computer that I have attached in my repository 
 and then run the code.
 
-P.S. I only split into Training and Testing datasets and hence you will see me using Validation and Testing terms interchangeably.Please consider this for my analysis.
+P.S: I only split into Training and Testing datasets and hence you will see me using Validation and Testing terms interchangeably.Please consider this for my analysis.
 
