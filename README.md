@@ -1,4 +1,4 @@
-This assignment is comprised of Machine Learning Modeling & Analysis on 2 datasets:
+This project is comprised of Machine Learning Modeling & Analysis on 2 datasets:
 
 1. ExoPlanet Identification
 Original Dataset URL: 
