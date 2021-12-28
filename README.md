@@ -40,5 +40,10 @@ and then run the code.
 Install the following python libraries:
 Numpy, Pandas, Matplotlib, Scikitlearn
 
-
+Supervised ML Algorithms used:
+-Decision Trees
+-Boosting Mechanism
+-K-Nearest Neghebours
+-Support Vector Machines
+-Neural Networks
 
