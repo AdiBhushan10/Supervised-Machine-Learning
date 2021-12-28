@@ -19,7 +19,7 @@ Problem Statement 1: Identify if the data recieved for a given celestial object 
 Original Dataset URL: 
 https://archive.ics.uci.edu/ml/datasets/wine+quality
 
-Problem Statement 2: Predict if the quality rating for a given wine on a scale of 1 to 10. 
+Problem Statement 2: Predict the quality rating for a given wine (& associated characterstics) on a scale of 1 to 10. 
 
 I have done data pre-processing (Changing names, handling missing values etc.) on the original dataset above
 and saved the .csv files in this repository.
